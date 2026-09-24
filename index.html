@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Doigt chanceux</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Doigt chanceux">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#14141b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14141b;
+    --bg-2: #1c1c26;
+    --ink: #f4f2ef;
+    --ink-dim: #8b8a99;
+    --ring: #ffffff;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); height:100%; }
+  html,body{
+    margin:0; height:100%; width:100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Fredoka', ui-rounded, system-ui, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #stage{
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 30%, var(--bg-2), var(--bg) 70%);
+    overflow: hidden;
+  }
+  #tabs{
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  #tabs button{
+    font-family: 'Fredoka', ui-rounded, system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  #tabs button.active{
+    background: var(--ink);
+    color: #14141b;
+  }
+  #teamPanel{
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: calc(env(safe-area-inset-top, 0px) + 80px) 20px calc(env(safe-area-inset-bottom, 0px) + 40px);
+  }
+  #teamPanel.show{ display: flex; justify-content: center; }
+  .teamPanelInner{
+    width: 100%;
+    max-width: 480px;
+  }
+  .teamPanelInner h2{
+    margin: 0 0 6px;
+    font-size: clamp(20px, 5.5vw, 26px);
+    font-weight: 700;
+  }
+  .teamPanelInner .hint{
+    margin: 0 0 20px;
+    color: var(--ink-dim);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  #addForm{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  #nameInput{
+    flex: 1;
+    min-width: 0;
+  }
+  #nameInput, #levelInput, #teamCountInput{
+    font-family: 'Fredoka', ui-rounded, system-ui, sans-serif;
+    font-size: 15px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.14);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 11px 12px;
+  }
+  #levelInput{ width: 118px; }
+  #addForm button, #generateBtn{
+    font-family: 'Fredoka', ui-rounded, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    background: var(--ink);
+    color: #14141b;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 18px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #playerList{
+    list-style: none;
+    margin: 0 0 22px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #playerList li{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,.05);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  #playerList .lvl{
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    color: #14141b;
+    flex-shrink: 0;
+  }
+  #playerList .pname{ flex: 1; font-size: 15px; }
+  #playerList .rm{
+    background: none; border: none;
+    color: var(--ink-dim);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+  }
+  #emptyHint{
+    color: var(--ink-dim);
+    font-size: 14px;
+    margin: 0 0 22px;
+  }
+  .teamControls{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .teamControls label{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--ink-dim);
+  }
+  #teamCountInput{ width: 64px; }
+  #teamsOutput{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .team-card{
+    border-radius: 16px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,.05);
+    border-left: 4px solid transparent;
+  }
+  .team-card .team-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .team-card .team-avg{
+    font-weight: 400;
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+  .team-card .member-row{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .team-card .member-row .lvl{
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    color: #14141b;
+    flex-shrink: 0;
+  }
+  .rankLabel{
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #14141b;
+    opacity: 0;
+    z-index: 4;
+  }
+  .touchpoint.ranked .rankLabel{ opacity: 1; }
+  .touchpoint.ranked .core{ opacity: .9; }
+  #hud{
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 70px);
+    left: 0; right: 0;
+    text-align: center;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity .3s ease;
+  }
+  #hud h1{
+    margin: 0;
+    font-size: clamp(22px, 6vw, 32px);
+    font-weight: 700;
+    letter-spacing: .01em;
+  }
+  #hud p{
+    margin: 8px 0 0;
+    font-size: clamp(14px, 3.6vw, 17px);
+    color: var(--ink-dim);
+    font-weight: 400;
+  }
+  #count{
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: clamp(64px, 22vw, 140px);
+    font-weight: 700;
+    color: var(--ink);
+    opacity: 0;
+    z-index: 6;
+    pointer-events: none;
+    text-shadow: 0 0 40px rgba(255,255,255,.25);
+  }
+  #count.show{
+    animation: pop .7s ease forwards;
+  }
+  @keyframes pop{
+    0%{ opacity:0; transform: translate(-50%,-50%) scale(.4); }
+    30%{ opacity:1; transform: translate(-50%,-50%) scale(1.08); }
+    70%{ opacity:1; transform: translate(-50%,-50%) scale(1); }
+    100%{ opacity:0; transform: translate(-50%,-50%) scale(.85); }
+  }
+  #fingerCount{
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: 16px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    z-index: 5;
+    pointer-events: none;
+    opacity: .8;
+  }
+  .touchpoint{
+    position: absolute;
+    width: 62px; height: 62px;
+    margin-left: -31px; margin-top: -31px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3;
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .5s ease, box-shadow .35s ease;
+  }
+  .touchpoint .core{
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    opacity: .35;
+  }
+  .touchpoint .ring{
+    position: absolute; inset: -7px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    opacity: .55;
+  }
+  .touchpoint.winner{
+    z-index: 10;
+    transform: scale(1.9);
+    box-shadow: 0 0 70px 10px currentColor;
+  }
+  .touchpoint.winner .core{ opacity: .6; }
+  .touchpoint.loser{
+    transform: scale(.3);
+    opacity: 0;
+  }
+  #winnerLabel{
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: 90px;
+    font-size: clamp(16px, 4vw, 20px);
+    color: var(--ink-dim);
+    opacity: 0;
+    z-index: 11;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity .4s ease .4s;
+    white-space: nowrap;
+  }
+  #winnerLabel.show{ opacity: 1; }
+  #reset{
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+    font-size: 14px;
+    color: var(--ink-dim);
+    z-index: 11;
+    transition: opacity .4s ease;
+  }
+  #reset.show{ opacity: 1; }
+</style>
+</head>
+<body>
+<div id="tabs">
+  <button id="tabSingle" class="active">Doigt chanceux</button>
+  <button id="tabRank">Classement 1–10</button>
+  <button id="tabTeams">Équipes équilibrées</button>
+</div>
+<div id="teamPanel">
+  <div class="teamPanelInner">
+    <h2>Équilibrer les équipes</h2>
+    <p class="hint">Ajoutez chaque personne avec sa cote de niveau, puis générez des équipes — les plus hauts niveaux sont automatiquement répartis dans des équipes différentes.</p>
+    <form id="addForm">
+      <input id="nameInput" type="text" placeholder="Nom" maxlength="24" autocomplete="off">
+      <select id="levelInput">
+        <option value="1">1 — Débutant</option>
+        <option value="2">2</option>
+        <option value="3" selected>3 — Moyen</option>
+        <option value="4">4</option>
+        <option value="5">5 — Expert</option>
+      </select>
+      <button type="submit">Ajouter</button>
+    </form>
+    <ul id="playerList"></ul>
+    <p id="emptyHint">Personne n'a encore été ajouté.</p>
+    <div class="teamControls">
+      <label>Nombre d'équipes
+        <input id="teamCountInput" type="number" min="2" max="8" value="2">
+      </label>
+      <button id="generateBtn" type="button">Générer les équipes</button>
+    </div>
+    <div id="teamsOutput"></div>
+  </div>
+</div>
+<div id="stage">
+  <div id="hud">
+    <h1 id="title">Doigt chanceux</h1>
+    <p id="subtitle">Chaque personne pose un doigt sur l'écran (jusqu'à 10)</p>
+  </div>
+  <div id="fingerCount"></div>
+  <div id="count"></div>
+  <div id="winnerLabel">Le doigt gagnant ✨ — touchez l'écran pour recommencer</div>
+  <div id="reset">Touchez n'importe où pour recommencer</div>
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const hud = document.getElementById('hud');
+  const subtitle = document.getElementById('subtitle');
+  const countEl = document.getElementById('count');
+  const winnerLabel = document.getElementById('winnerLabel');
+  const resetEl = document.getElementById('reset');
+  const fingerCountEl = document.getElementById('fingerCount');
+
+  const COLORS = ['#FF6B6B','#4ECDC4','#FFD166','#A78BFA','#06D6A0','#F472B6','#38BDF8','#FB923C','#EF476F','#84CC16'];
+  const HOLD_MS = 3000;
+  const MAX_POINTS = 10;
+
+  let points = new Map(); // id -> {el, x, y}
+  let colorIdx = 0;
+  let countdownTimer = null;
+  let tickTimer = null;
+  let decided = false;
+  let ticksLeft = 3;
+  let mode = 'single'; // 'single' | 'rank'
+
+  function makePoint(id, x, y){
+    const el = document.createElement('div');
+    el.className = 'touchpoint';
+    const color = COLORS[colorIdx % COLORS.length];
+    colorIdx++;
+    el.style.color = color;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    const core = document.createElement('div');
+    core.className = 'core';
+    core.style.background = color;
+    const ring = document.createElement('div');
+    ring.className = 'ring';
+    const rankLabel = document.createElement('div');
+    rankLabel.className = 'rankLabel';
+    el.appendChild(core);
+    el.appendChild(ring);
+    el.appendChild(rankLabel);
+    stage.appendChild(el);
+    return { el, x, y, color, rankLabel };
+  }
+
+  function movePoint(p, x, y){
+    p.x = x; p.y = y;
+    p.el.style.left = x + 'px';
+    p.el.style.top = y + 'px';
+  }
+
+  function removePoint(id){
+    const p = points.get(id);
+    if (p){ p.el.remove(); points.delete(id); }
+  }
+
+  function introText(){
+    return mode === 'single'
+      ? "Chaque personne pose un doigt sur l'écran (jusqu'à 10)"
+      : "Chaque personne pose un doigt — un rang de 1 à 10 sera tiré au sort";
+  }
+
+  function clearAll(){
+    points.forEach(p => p.el.remove());
+    points.clear();
+    colorIdx = 0;
+    decided = false;
+    hud.style.opacity = '1';
+    subtitle.textContent = introText();
+    countEl.className = '';
+    countEl.textContent = '';
+    winnerLabel.classList.remove('show');
+    resetEl.classList.remove('show');
+    fingerCountEl.textContent = '';
+    stopCountdown();
+  }
+
+  function stopCountdown(){
+    clearTimeout(countdownTimer);
+    clearTimeout(tickTimer);
+    countdownTimer = null;
+    tickTimer = null;
+  }
+
+  function evaluate(){
+    if (decided) return;
+    const n = points.size;
+    fingerCountEl.textContent = n > 0 ? (n + (n === 1 ? ' doigt' : ' doigts')) : '';
+    if (n >= 2){
+      if (!countdownTimer && !tickTimer){
+        startCountdown();
+      }
+    } else {
+      stopCountdown();
+      subtitle.textContent = introText();
+      countEl.className = '';
+      countEl.textContent = '';
+    }
+  }
+
+  function startCountdown(){
+    ticksLeft = 3;
+    subtitle.textContent = 'Gardez vos doigts en place…';
+    tick();
+  }
+
+  function tick(){
+    if (points.size < 2){ stopCountdown(); evaluate(); return; }
+    countEl.textContent = ticksLeft;
+    countEl.className = '';
+    void countEl.offsetWidth;
+    countEl.className = 'show';
+    if (ticksLeft <= 1){
+      tickTimer = setTimeout(() => {
+        if (points.size >= 2) decide();
+        else { stopCountdown(); evaluate(); }
+      }, 850);
+    } else {
+      ticksLeft--;
+      tickTimer = setTimeout(tick, 850);
+    }
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function decide(){
+    decided = true;
+    stopCountdown();
+    countEl.className = '';
+    countEl.textContent = '';
+    hud.style.opacity = '0';
+
+    if (mode === 'single'){
+      const ids = Array.from(points.keys());
+      const winnerId = ids[Math.floor(Math.random() * ids.length)];
+      points.forEach((p, id) => {
+        if (id === winnerId){
+          p.el.classList.add('winner');
+        } else {
+          p.el.classList.add('loser');
+        }
+      });
+      winnerLabel.textContent = 'Le doigt gagnant ✨ — touchez l\'écran pour recommencer';
+      winnerLabel.style.left = points.get(winnerId).x + 'px';
+      winnerLabel.style.top = points.get(winnerId).y + 'px';
+      setTimeout(() => winnerLabel.classList.add('show'), 300);
+    } else {
+      const ids = shuffle(Array.from(points.keys()));
+      ids.forEach((id, i) => {
+        const rank = i + 1;
+        const p = points.get(id);
+        p.rankLabel.textContent = rank;
+        p.el.classList.add('ranked');
+        const scale = 1.5 - (rank - 1) * (0.7 / Math.max(ids.length - 1, 1));
+        p.el.style.transform = `scale(${scale})`;
+      });
+    }
+    setTimeout(() => resetEl.classList.add('show'), 900);
+  }
+
+  function handleStart(e){
+    e.preventDefault();
+    if (decided){ clearAll(); return; }
+    for (const t of e.changedTouches){
+      if (!points.has(t.identifier) && points.size < MAX_POINTS){
+        points.set(t.identifier, makePoint(t.identifier, t.clientX, t.clientY));
+      }
+    }
+    evaluate();
+  }
+
+  function handleMove(e){
+    e.preventDefault();
+    if (decided) return;
+    for (const t of e.changedTouches){
+      const p = points.get(t.identifier);
+      if (p) movePoint(p, t.clientX, t.clientY);
+    }
+  }
+
+  function handleEnd(e){
+    e.preventDefault();
+    if (decided) return;
+    for (const t of e.changedTouches){
+      removePoint(t.identifier);
+    }
+    evaluate();
+  }
+
+  const tabSingle = document.getElementById('tabSingle');
+  const tabRank = document.getElementById('tabRank');
+  const tabTeams = document.getElementById('tabTeams');
+  const teamPanel = document.getElementById('teamPanel');
+  const addForm = document.getElementById('addForm');
+  const nameInput = document.getElementById('nameInput');
+  const levelInput = document.getElementById('levelInput');
+  const playerListEl = document.getElementById('playerList');
+  const emptyHint = document.getElementById('emptyHint');
+  const teamCountInput = document.getElementById('teamCountInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const teamsOutput = document.getElementById('teamsOutput');
+
+  const LEVEL_COLORS = { 1:'#38BDF8', 2:'#06D6A0', 3:'#FFD166', 4:'#FB923C', 5:'#FF6B6B' };
+  let players = [];
+  let playerIdSeq = 1;
+
+  function renderPlayerList(){
+    playerListEl.innerHTML = '';
+    emptyHint.style.display = players.length ? 'none' : 'block';
+    players.forEach(p => {
+      const li = document.createElement('li');
+      const lvl = document.createElement('span');
+      lvl.className = 'lvl';
+      lvl.style.background = LEVEL_COLORS[p.level];
+      lvl.textContent = p.level;
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = p.name;
+      const rm = document.createElement('button');
+      rm.className = 'rm';
+      rm.type = 'button';
+      rm.textContent = '×';
+      rm.addEventListener('click', () => {
+        players = players.filter(x => x.id !== p.id);
+        renderPlayerList();
+      });
+      li.appendChild(lvl);
+      li.appendChild(name);
+      li.appendChild(rm);
+      playerListEl.appendChild(li);
+    });
+  }
+
+  addForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    if (!name) return;
+    players.push({ id: playerIdSeq++, name, level: Number(levelInput.value) });
+    nameInput.value = '';
+    nameInput.focus();
+    renderPlayerList();
+  });
+
+  function generateTeams(){
+    const teamCount = Math.min(8, Math.max(2, Number(teamCountInput.value) || 2));
+    teamsOutput.innerHTML = '';
+    if (players.length < teamCount){
+      const msg = document.createElement('p');
+      msg.className = 'hint';
+      msg.style.margin = '0';
+      msg.textContent = 'Ajoutez au moins autant de personnes que d\'équipes.';
+      teamsOutput.appendChild(msg);
+      return;
+    }
+    const sorted = players.slice().sort((a,b) => b.level - a.level);
+    const teams = Array.from({ length: teamCount }, () => []);
+    let t = 0, dir = 1;
+    for (const p of sorted){
+      teams[t].push(p);
+      if (dir === 1){
+        t++;
+        if (t === teamCount){ t = teamCount - 1; dir = -1; }
+      } else {
+        t--;
+        if (t < 0){ t = 0; dir = 1; }
+      }
+    }
+    teams.forEach((team, i) => {
+      const card = document.createElement('div');
+      card.className = 'team-card';
+      card.style.borderLeftColor = COLORS[i % COLORS.length];
+      const avg = (team.reduce((s,p) => s + p.level, 0) / team.length).toFixed(1);
+      const header = document.createElement('div');
+      header.className = 'team-header';
+      header.innerHTML = `<span>Équipe ${i + 1}</span><span class="team-avg">moyenne ${avg}</span>`;
+      card.appendChild(header);
+      team.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        const lvl = document.createElement('span');
+        lvl.className = 'lvl';
+        lvl.style.background = LEVEL_COLORS[p.level];
+        lvl.textContent = p.level;
+        const name = document.createElement('span');
+        name.textContent = p.name;
+        row.appendChild(lvl);
+        row.appendChild(name);
+        card.appendChild(row);
+      });
+      teamsOutput.appendChild(card);
+    });
+  }
+  generateBtn.addEventListener('click', generateTeams);
+
+  function setMode(m){
+    if (mode === m) return;
+    mode = m;
+    tabSingle.classList.toggle('active', m === 'single');
+    tabRank.classList.toggle('active', m === 'rank');
+    tabTeams.classList.toggle('active', m === 'team');
+    teamPanel.classList.toggle('show', m === 'team');
+    stage.style.display = (m === 'team') ? 'none' : 'block';
+    clearAll();
+  }
+  tabSingle.addEventListener('click', () => setMode('single'));
+  tabRank.addEventListener('click', () => setMode('rank'));
+  tabTeams.addEventListener('click', () => setMode('team'));
+
+  stage.addEventListener('touchstart', handleStart, { passive: false });
+  stage.addEventListener('touchmove', handleMove, { passive: false });
+  stage.addEventListener('touchend', handleEnd, { passive: false });
+  stage.addEventListener('touchcancel', handleEnd, { passive: false });
+
+  // Souris (secours pour test sur ordinateur) — un seul point simulé
+  let mouseId = 'mouse';
+  let mouseDown = false;
+  stage.addEventListener('mousedown', (e) => {
+    if (decided){ clearAll(); return; }
+    mouseDown = true;
+    points.set(mouseId, makePoint(mouseId, e.clientX, e.clientY));
+    evaluate();
+  });
+  stage.addEventListener('mousemove', (e) => {
+    if (!mouseDown || decided) return;
+    const p = points.get(mouseId);
+    if (p) movePoint(p, e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', () => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    removePoint(mouseId);
+    evaluate();
+  });
+})();
+</script>
+</body>
+</html>
